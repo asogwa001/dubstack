@@ -1,0 +1,25 @@
+{
+    "models": [
+        {
+            "id": "supertonic-66m",
+            "name": "Supertonic 66M",
+            "status": "active",
+            "description": "Fast, lightweight TTS model",
+            "voiceCloning": false
+        },
+        {
+            "id": "kokoro-82m",
+            "name": "Kokoro 82M",
+            "status": "coming_soon",
+            "description": "High quality emotional TTS",
+            "voiceCloning": false
+        },
+        {
+            "id": "chatterbox-500m",
+            "name": "Chatterbox 500M",
+            "status": "coming_soon",
+            "description": "Ultra-realistic with voice cloning",
+            "voiceCloning": true
+        }
+    ]
+}
