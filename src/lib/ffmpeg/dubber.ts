@@ -272,7 +272,8 @@ export class FFmpegDubber {
         });
 
         // Read output file
-        const outputData = await this.ffmpeg.readFile('output.mp4');
+        //const outputData = await this.ffmpeg.readFile('output.mp4');
+        const outputData = await this.ffmpeg.readFile('output.mp4') as Uint8Array;
 
         // Cleanup
         await this.ffmpeg.deleteFile(videoFileName);
@@ -280,7 +281,9 @@ export class FFmpegDubber {
         await this.ffmpeg.deleteFile('subtitles.srt');
         await this.ffmpeg.deleteFile('output.mp4');
 
-        return new Blob([outputData], { type: 'video/mp4' });
+        //return new Blob([outputData], { type: 'video/mp4' });
+        return new Blob([new Uint8Array(outputData)], { type: 'video/mp4' });
+        
     }
 }
 
