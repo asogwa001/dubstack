@@ -5,7 +5,8 @@ import path from 'path';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: "/dubstack/",
+  // base: "/dubstack/", // serving at repo gh page
+  base: "/", // serving 
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
