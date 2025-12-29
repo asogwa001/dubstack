@@ -139,6 +139,8 @@ body {
     flex-direction: column;
     gap: 1rem;
     transition: var(--transition);
+    min-width: 0; /* Critical: allows panel to shrink within grid */
+    overflow: hidden; /* Prevents children from expanding panel */
 }
 
 .panel:hover {
@@ -409,11 +411,12 @@ body {
     opacity: 0.3;
 }
 
-/* Video Gallery - Horizontal Scroll */
+/* Video Gallery - Horizontal Scroll - RESPONSIVE */
 .gallery-container {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    min-width: 0; /* Allows container to shrink */
 }
 
 .gallery-arrow {
@@ -444,6 +447,7 @@ body {
     scroll-behavior: smooth;
     padding: 0.25rem;
     flex: 1;
+    min-width: 0; /* Critical: prevents gallery from expanding parent */
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
@@ -453,7 +457,7 @@ body {
 }
 
 .video-card {
-    flex-shrink: 0;
+    flex: 0 0 90px; /* Fixed width, no grow, no shrink */
     width: 90px;
     border-radius: var(--radius-md);
     overflow: hidden;
@@ -681,4 +685,24 @@ body {
 ::selection {
     background: var(--accent-primary);
     color: white;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+    .video-card {
+        flex: 0 0 80px;
+        width: 80px;
+    }
+}
+
+@media (max-width: 480px) {
+    .video-card {
+        flex: 0 0 70px;
+        width: 70px;
+    }
+    
+    .gallery-arrow {
+        width: 28px;
+        height: 28px;
+    }
 }
