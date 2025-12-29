@@ -240,7 +240,7 @@ export class SupertonicTTS extends TTSModel {
 
     private basePath: string;
 
-    constructor(basePath: string = '/models/supertonic') {
+    constructor(basePath: string = import.meta.env.VITE_MODELS_BASE_URL) {
         super();
         this.basePath = basePath;
     }

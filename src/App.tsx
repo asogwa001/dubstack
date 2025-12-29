@@ -4,6 +4,7 @@ import { getFFmpegDubber, DubProgress } from './lib/ffmpeg/dubber';
 import { VoiceStyle } from './lib/tts/types';
 import { Mic, Video, Download, Play, Loader2, Volume2, Sparkles, ChevronLeft, ChevronRight, Check, Sliders, Cpu } from 'lucide-react';
 import modelsData from './data/models.json';
+
 import './App.css';
 
 type ProcessingStage = 'idle' | 'loading-tts' | 'generating-audio' | 'loading-ffmpeg' | 'processing-video' | 'complete' | 'error';
@@ -17,7 +18,7 @@ interface ProcessingState {
 interface VideoItem {
   id: string;
   name: string;
-  url: string;
+  preview: string;
   duration: string;
   tags: string[];
 }
@@ -74,7 +75,8 @@ function App() {
   useEffect(() => {
     const loadVideos = async () => {
       try {
-        const response = await fetch('/videos/videos.json');
+        const response = await fetch(`${import.meta.env.VITE_VIDEOS_BASE_URL}/videos.json`);
+
         const data: VideosData = await response.json();
         setVideos(data.videos);
         if (data.videos.length > 0) {
@@ -145,7 +147,9 @@ function App() {
       });
 
       const videoFileName = selectedVideo.name;
-      const videoResponse = await fetch(`/videos/${videoFileName}`);
+      //const videoResponse = await fetch(getVideoPath(videoFileName));
+      const videoResponse = await fetch(`${import.meta.env.VITE_VIDEOS_BASE_URL}/${videoFileName}`);
+
       const videoBlob = await videoResponse.blob();
 
       const dubber = getFFmpegDubber();
@@ -240,8 +244,9 @@ function App() {
                 >
                   <div className="video-card-preview">
                     <video
-                      src={`/${video.url}`}
-                      loop
+                      //src={getVideoPath(video.url)}
+                      src={`${import.meta.env.VITE_VIDEOS_BASE_URL}/${video.preview}`}
+                      //loop
                       muted
                       autoPlay
                       playsInline
@@ -267,7 +272,8 @@ function App() {
           {selectedVideo && (
             <div className="selected-video-preview">
               <video
-                src={`/${selectedVideo.url}`}
+                //src={getVideoPath(selectedVideo.url)}
+                src={`${import.meta.env.VITE_VIDEOS_BASE_URL}/${selectedVideo.preview}`}
                 loop
                 muted
                 autoPlay
@@ -477,7 +483,7 @@ function App() {
       </main>
 
       <footer className="footer">
-        <p>Powered by ONNX Runtime Web & FFmpeg.wasm • No data leaves your browser</p>
+        <p>Powered by WASM• No data leaves your browser</p>
       </footer>
     </div>
   );
