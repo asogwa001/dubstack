@@ -27,3 +27,5 @@ dist-ssr
 # custom
 public
 src/assets
+*.env*
+videos
