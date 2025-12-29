@@ -3,7 +3,6 @@ import { SupertonicTTS } from './lib/tts/supertonic';
 import { getFFmpegDubber, DubProgress } from './lib/ffmpeg/dubber';
 import { VoiceStyle } from './lib/tts/types';
 import { Mic, Video, Download, Play, Loader2, Volume2, Sparkles, ChevronLeft, ChevronRight, Check, Sliders, Cpu } from 'lucide-react';
-import modelsData from './data/models.json';
 
 import './App.css';
 
@@ -58,7 +57,8 @@ function App() {
   const [selectedVoice, setSelectedVoice] = useState<string>('F1');
   const [selectedModel, setSelectedModel] = useState<string>('supertonic-66m');
   const [availableVoices, setAvailableVoices] = useState<VoiceStyle[]>([]);
-  const [models] = useState<ModelInfo[]>(modelsData.models as ModelInfo[]);
+  //const [models] = useState<ModelInfo[]>(modelsData.models as ModelInfo[]);
+  const [models, setModels] = useState<ModelInfo[]>([]);
   const [settings, setSettings] = useState<AdvancedSettings>(DEFAULT_SETTINGS);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [processing, setProcessing] = useState<ProcessingState>({
@@ -87,6 +87,28 @@ function App() {
       }
     };
     loadVideos();
+  }, []);
+
+  // Load models on mount
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_MODELS_BASE_URL}/models.json`
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to load models');
+        }
+
+        const data = await response.json();
+        setModels(data.models);
+      } catch (error) {
+        console.error('Failed to load models:', error);
+      }
+    };
+
+    loadModels();
   }, []);
 
   const handleVideoSelect = useCallback((video: VideoItem) => {
