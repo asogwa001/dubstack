@@ -24,14 +24,13 @@ DubStack runs entirely in the browser, but requires hosting for static assets. M
 
 ### Environment Variables
 
-Create a `.env` file in the project root with the following variables:
+Create a `.env` file in the project root with a single variable:
 
 ```env
 VITE_PUBLIC_BASE_URL=https://your-remote-storage.com/public
-VITE_SUPERTONIC_BASE_URL=https://your-remote-storage.com/supertonic
 ```
 
-> **Note**: These URLs can point to local directories during development or remote storage buckets for production.
+> **Note**: This URL can point to a local directory during development or a remote storage bucket for production. All assets (models, videos, and TTS model files) must be self-hosted as Hugging Face does not include CORS headers required for browser-based loading.
 
 ### Public Assets Structure
 
@@ -40,7 +39,12 @@ The `VITE_PUBLIC_BASE_URL` should point to a directory with the following layout
 ```
 public/
 ├── models/
-│   └── models.json
+│   ├── models.json
+│   └── supertonic/
+│       ├── config.json
+│       ├── model.onnx
+│       ├── tokenizer.json
+│       └── (other model files...)
 └── videos/
     ├── subway_surf_1.mp4
     ├── subway_surf_1_preview.mp4
@@ -50,6 +54,8 @@ public/
 ```
 
 > **Example**: The `public/` directory in this repository demonstrates this exact layout.
+
+**Important**: All assets must be self-hosted with proper CORS headers enabled. The Supertonic model files must be downloaded from [Hugging Face](https://huggingface.co/Supertone/supertonic/tree/main) and placed in the `public/models/supertonic/` directory, maintaining the original file structure.
 
 ### Video Assets Structure
 
@@ -94,37 +100,19 @@ videos/
 
 The app uses `videos.json` to discover and display available videos in the gallery.
 
-### Supertonic Model
+### Supertonic Model Setup
 
-The `VITE_SUPERTONIC_BASE_URL` should point to the ONNX format of the Supertonic TTS model. The directory structure must match the original Hugging Face repository layout.
+The Supertonic TTS model must be self-hosted within your `public/models/supertonic/` directory. 
 
-**Options**:
+**Setup Steps**:
 
-1. **Direct Hugging Face** (Recommended for quick setup):
-   ```env
-   VITE_SUPERTONIC_BASE_URL=https://huggingface.co/SajjadAyoubi/supertonic/resolve/main
-   ```
+1. Download the Supertonic model files from [Hugging Face](https://huggingface.co/Supertone/supertonic/tree/main)
+2. Place all model files in `public/models/supertonic/`, maintaining the original directory structure
+3. Ensure your hosting server includes proper CORS headers to allow browser access
 
-2. **Self-hosted alongside other assets**:
-   ```
-   public/
-   ├── models/
-   │   ├── models.json
-   │   └── supertonic/
-   │       ├── config.json
-   │       ├── model.onnx
-   │       └── ...
-   └── videos/
-   ```
-   
-   Then set:
-   ```env
-   VITE_SUPERTONIC_BASE_URL=https://your-remote-storage.com/public/models/supertonic
-   ```
+The app automatically locates the Supertonic model at `{VITE_PUBLIC_BASE_URL}/models/supertonic/`.
 
-3. **Separate self-hosted location**: Download and host the model files maintaining the original structure from the Hugging Face repository.
-
-**Reference**: [Supertonic on Hugging Face](https://huggingface.co/SajjadAyoubi/supertonic)
+> **Why self-hosting is required**: Hugging Face does not include CORS headers on their model files, which prevents direct browser-based loading. All assets must be served from a CORS-enabled server.
 
 ### TTS Models Configuration
 
@@ -180,4 +168,5 @@ npm run build
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Acknowledgments
-- Uses [Supertonic TTS](https://huggingface.co/SajjadAyoubi/supertonic) and [FFmpeg.wasm](https://github.com/ffmpegwasm/ffmpeg.wasm)
+
+- Uses [Supertonic TTS](https://huggingface.co/Supertone/supertonic/tree/main) model and [FFmpeg.wasm](https://github.com/ffmpegwasm/ffmpeg.wasm)
