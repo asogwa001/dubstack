@@ -11,6 +11,8 @@ export interface SubtitleConfig {
     outline?: number;
     shadow?: number;
     marginV?: number;
+    fontName?: string;
+    fontPath?: string;
 }
 
 export interface DubConfig {
@@ -145,7 +147,9 @@ export class FFmpegDubber {
             fontSize = 16,
             outline = 2,
             shadow = 1,
-            marginV = 80,
+            marginV = 25,
+            fontName = 'Arial',
+            fontPath = 'fonts/arial/arial.ttf',
         } = subtitles;
 
         if (!this.loaded) {
@@ -183,6 +187,28 @@ export class FFmpegDubber {
         const encoder = new TextEncoder();
         await this.ffmpeg.writeFile('subtitles.srt', encoder.encode(srtContent));
 
+        // Load font file if provided
+        let ffmpegFontName = fontName;
+        if (fontPath) {
+            onProgress?.({
+                stage: 'processing',
+                progress: 50,
+                message: `Loading font ${fontName}...`,
+            });
+            try {
+                // Ensure fontPath is absolute or relative to the public root
+                const fontUrl = `${import.meta.env.VITE_PUBLIC_BASE_URL}/${fontPath.startsWith('/') ? fontPath.slice(1) : fontPath}`;
+                const fontData = await fetchFile(fontUrl);
+                const fontFileName = 'font.ttf';
+                await this.ffmpeg.writeFile(fontFileName, fontData);
+                // FFmpeg refers to fonts by their "FontName" in ASS/SRT styling, 
+                // but since we provided the file, we can sometimes refer to it directly or rely on the name.
+                // However, in WASM we must use the font name that matches what's in the file.
+            } catch (error) {
+                console.error('Failed to load font:', error);
+            }
+        }
+
         // Calculate audio duration
         const audioDuration = audioData.length / sampleRate;
 
@@ -193,14 +219,15 @@ export class FFmpegDubber {
         });
 
         // Build subtitle style (matching ffmpeg_dub.py)
-        // Format: FontName=Inter,FontSize=16,Outline=2,Shadow=1,Alignment=2,MarginV=80
+        // Format: FontName=Arial,FontSize=16,Outline=2,Shadow=1,Alignment=2,MarginV=80
         const subtitleStyle = [
+            `FontName=${fontName}`,
             `FontSize=${fontSize}`,
             `Outline=${outline}`,
             `Shadow=${shadow}`,
             `Alignment=2`,
             `MarginV=${marginV}`,
-        ].join('\\,');
+        ].join(',');
 
         // Build FFmpeg command
         const ffmpegArgs: string[] = ['-y'];
@@ -213,8 +240,8 @@ export class FFmpegDubber {
 
         // Video filter with embedded subtitles
         // Note: ffmpeg.wasm may have limited ASS subtitle support, using SRT with force_style
-        //const videoFilter = `subtitles=subtitles.srt:force_style='${subtitleStyle}'`;
-        const videoFilter = `subtitles=subtitles.srt`;
+        // We use fontsdir=. to let FFmpeg find the font.ttf we wrote
+        const videoFilter = `subtitles=subtitles.srt:fontsdir=.:force_style='${subtitleStyle}'`;
 
         //ffmpegArgs.push('-vf', videoFilter);
 
@@ -233,13 +260,13 @@ export class FFmpegDubber {
         // }
         if (bgVolume > 0) {
             // Combine video subtitles + audio mixing in ONE filter_complex
-            audioFilter = `[0:v]subtitles=subtitles.srt[v];[0:a]volume=${bgVolume}[va];[1:a]volume=1.0[ta];[va][ta]amix=inputs=2:dropout_transition=0[outa]`;
+            audioFilter = `[0:v]${videoFilter}[v];[0:a]volume=${bgVolume}[va];[1:a]volume=1.0[ta];[va][ta]amix=inputs=2:dropout_transition=0[outa]`;
             ffmpegArgs.push('-filter_complex', audioFilter);
             ffmpegArgs.push('-map', '[v]');
             ffmpegArgs.push('-map', '[outa]');
         } else {
             // Just subtitles on video, use TTS audio directly
-            audioFilter = `[0:v]subtitles=subtitles.srt[v]`;
+            audioFilter = `[0:v]${videoFilter}[v]`;
             ffmpegArgs.push('-filter_complex', audioFilter);
             ffmpegArgs.push('-map', '[v]');
             ffmpegArgs.push('-map', '1:a:0');
@@ -279,11 +306,12 @@ export class FFmpegDubber {
         await this.ffmpeg.deleteFile(videoFileName);
         await this.ffmpeg.deleteFile('audio.wav');
         await this.ffmpeg.deleteFile('subtitles.srt');
+        if (fontPath) await this.ffmpeg.deleteFile('font.ttf');
         await this.ffmpeg.deleteFile('output.mp4');
 
         //return new Blob([outputData], { type: 'video/mp4' });
         return new Blob([new Uint8Array(outputData)], { type: 'video/mp4' });
-        
+
     }
 }
 
