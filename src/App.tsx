@@ -40,6 +40,8 @@ interface AdvancedSettings {
   silenceDuration: number;
   endSilenceDuration: number;
   subtitleFontSize: number;
+  subtitleFont: string;
+  subtitleFontPath: string;
 }
 
 const DEFAULT_SETTINGS: AdvancedSettings = {
@@ -48,6 +50,8 @@ const DEFAULT_SETTINGS: AdvancedSettings = {
   silenceDuration: 0.3,
   endSilenceDuration: 0.5,
   subtitleFontSize: 16,
+  subtitleFont: 'Arial',
+  subtitleFontPath: 'fonts/arial/arial.ttf',
 };
 
 function App() {
@@ -57,6 +61,7 @@ function App() {
   const [selectedVoice, setSelectedVoice] = useState<string>('F1');
   const [selectedModel, setSelectedModel] = useState<string>('supertonic-66m');
   const [availableVoices, setAvailableVoices] = useState<VoiceStyle[]>([]);
+  const [availableFonts, setAvailableFonts] = useState<{ name: string, displayName: string, file: string }[]>([]);
   //const [models] = useState<ModelInfo[]>(modelsData.models as ModelInfo[]);
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [settings, setSettings] = useState<AdvancedSettings>(DEFAULT_SETTINGS);
@@ -109,6 +114,30 @@ function App() {
     };
 
     loadModels();
+  }, []);
+
+  // Load fonts on mount
+  useEffect(() => {
+    const loadFonts = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_PUBLIC_BASE_URL}/fonts/fonts.json`);
+        const data = await response.json();
+        setAvailableFonts(data.fonts);
+
+        // Find Arial and set it as default if not already set
+        const arialFont = data.fonts.find((f: any) => f.name === 'Arial');
+        if (arialFont) {
+          setSettings(prev => ({
+            ...prev,
+            subtitleFont: arialFont.name,
+            subtitleFontPath: `fonts/${arialFont.file}`
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to load fonts:', error);
+      }
+    };
+    loadFonts();
   }, []);
 
   const handleVideoSelect = useCallback((video: VideoItem) => {
@@ -200,6 +229,8 @@ function App() {
         bgVolume: settings.bgVolume,
         subtitles: {
           fontSize: settings.subtitleFontSize,
+          fontName: settings.subtitleFont,
+          fontPath: settings.subtitleFontPath,
         },
       }, handleProgress);
 
@@ -440,6 +471,31 @@ function App() {
                   onChange={(e) => updateSetting('subtitleFontSize', parseInt(e.target.value))}
                   disabled={isProcessing}
                 />
+              </div>
+
+              <div className="setting-row">
+                <label><Sparkles size={16} /> Font</label>
+                <select
+                  value={settings.subtitleFont}
+                  onChange={(e) => {
+                    const font = availableFonts.find(f => f.name === e.target.value);
+                    if (font) {
+                      setSettings(prev => ({
+                        ...prev,
+                        subtitleFont: font.name,
+                        subtitleFontPath: `fonts/${font.file}`
+                      }));
+                    }
+                  }}
+                  disabled={isProcessing}
+                >
+                  {availableFonts.map((font) => (
+                    <option key={font.name} value={font.name}>
+                      {font.displayName}
+                    </option>
+                  ))}
+                  {availableFonts.length === 0 && <option value="Arial">Arial</option>}
+                </select>
               </div>
             </div>
           )}
