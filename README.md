@@ -154,14 +154,6 @@ npm run dev
 npm run build
 ```
 
-## Technology Stack
-
-- **Frontend**: React + TypeScript + Vite
-- **TTS Engine**: ONNX Runtime Web
-- **Video Processing**: FFmpeg.wasm
-- **Runtime**: WebAssembly
-
-
 
 ## Contributing
 
