@@ -1,0 +1,34 @@
+{
+  "fonts": [
+    {
+      "name": "Arial",
+      "displayName": "Arial Regular",
+      "file": "arial/arial.ttf"
+    },
+    {
+      "name": "Arial Black",
+      "displayName": "Arial Black",
+      "file": "arial/ARIBL0.ttf"
+    },
+    {
+      "name": "Montserrat",
+      "displayName": "Montserrat Regular",
+      "file": "montserrat/Montserrat Regular 400.ttf"
+    },
+    {
+      "name": "Montserrat Medium",
+      "displayName": "Montserrat Medium",
+      "file": "montserrat/Montserrat Medium 500.ttf"
+    },
+    {
+      "name": "Roboto",
+      "displayName": "Roboto Regular",
+      "file": "roboto/Roboto-Regular.ttf"
+    },
+    {
+      "name": "Roboto Light",
+      "displayName": "Roboto Light",
+      "file": "roboto/Roboto-Light.ttf"
+    }
+  ]
+}
