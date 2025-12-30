@@ -142,9 +142,3 @@ MIT
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Acknowledgments
-
-- Based on [dubstack0](https://github.com/asogwa001/dubstack0)
-- Uses [Supertonic TTS](https://huggingface.co/SajjadAyoubi/supertonic) model
-- Powered by ONNX Runtime and FFmpeg.wasm
