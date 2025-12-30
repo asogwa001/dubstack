@@ -1,0 +1,12 @@
+{
+  "videos": [
+    {
+      "id": "a1c2d3e4-0001-4f2e-9eee-b6e4e7dfdd2b",
+      "name": "subway_surf_1.mp4",
+      "preview": "subway_surf_1_preview.mp4",
+      "duration": "03:13",
+      "tags": ["subway", "nature"]
+    }
+
+  ]
+}
