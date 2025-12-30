@@ -75,7 +75,7 @@ function App() {
   useEffect(() => {
     const loadVideos = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_VIDEOS_BASE_URL}/videos.json`);
+        const response = await fetch(`${import.meta.env.VITE_PUBLIC_BASE_URL}/videos/videos.json`);
 
         const data: VideosData = await response.json();
         setVideos(data.videos);
@@ -94,7 +94,7 @@ function App() {
     const loadModels = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_MODELS_BASE_URL}/models.json`
+          `${import.meta.env.VITE_PUBLIC_BASE_URL}/models/models.json`
         );
 
         if (!response.ok) {
@@ -170,7 +170,7 @@ function App() {
 
       const videoFileName = selectedVideo.name;
       //const videoResponse = await fetch(getVideoPath(videoFileName));
-      const videoResponse = await fetch(`${import.meta.env.VITE_VIDEOS_BASE_URL}/${videoFileName}`);
+      const videoResponse = await fetch(`${import.meta.env.VITE_PUBLIC_BASE_URL}/videos/${videoFileName}`);
 
       const videoBlob = await videoResponse.blob();
 
@@ -267,7 +267,7 @@ function App() {
                   <div className="video-card-preview">
                     <video
                       //src={getVideoPath(video.url)}
-                      src={`${import.meta.env.VITE_VIDEOS_BASE_URL}/${video.preview}`}
+                      src={`${import.meta.env.VITE_PUBLIC_BASE_URL}/videos/${video.preview}`}
                       //loop
                       muted
                       autoPlay
@@ -295,7 +295,7 @@ function App() {
             <div className="selected-video-preview">
               <video
                 //src={getVideoPath(selectedVideo.url)}
-                src={`${import.meta.env.VITE_VIDEOS_BASE_URL}/${selectedVideo.preview}`}
+                src={`${import.meta.env.VITE_PUBLIC_BASE_URL}/videos/${selectedVideo.preview}`}
                 loop
                 muted
                 autoPlay
