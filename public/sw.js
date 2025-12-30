@@ -1,9 +1,11 @@
-const CACHE_NAME = 'dubstack-assets-v1';
+const CACHE_NAME = 'dubstack-assets-v4';
 const ASSETS_TO_CACHE_EXTENSIONS = [
     '.onnx',
+    'onnx_data',
+    'bin',
     '.wasm',
     '.mp4',
-    '.json',
+    // '.json',
 ];
 
 self.addEventListener('install', (event) => {
@@ -31,7 +33,7 @@ self.addEventListener('fetch', (event) => {
 
     const isCachableAsset = ASSETS_TO_CACHE_EXTENSIONS.some(ext =>
         url.pathname.endsWith(ext)
-    ) || url.pathname.includes('/models/') || url.pathname.includes('/videos/');
+    );
 
     if (isCachableAsset && event.request.method === 'GET') {
         event.respondWith(
@@ -41,7 +43,9 @@ self.addEventListener('fetch', (event) => {
                         return response;
                     }
                     return fetch(event.request).then((networkResponse) => {
-                        if (networkResponse.status === 200 || networkResponse.status === 206) {
+                        //networkResponse.status === 206 for partial chunks (video streaming)
+                        // but unfortunately cache api does not support caching chunks
+                        if (networkResponse.status === 200 ) {
                             cache.put(event.request, networkResponse.clone());
                         }
                         return networkResponse;
