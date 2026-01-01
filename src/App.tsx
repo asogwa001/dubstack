@@ -276,7 +276,7 @@ function App() {
           <Sparkles className="logo-icon" />
           <h1>Dubstack</h1>
         </div>
-        <p className="tagline">AI-Powered Video Dubbing • 100% Browser-based</p>
+        <p className="tagline">AI-Powered Video Dubbing • 100% Browser-based • <a target="_blank" href="https://github.com/asogwa001/dubstack">Source Code</a></p>
       </header>
 
       <main className="main-content">
