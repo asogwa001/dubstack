@@ -22,6 +22,8 @@ export interface DubConfig {
     srtContent: string;
     bgVolume?: number;
     subtitles?: SubtitleConfig;
+    // Pre-fetched assets
+    prefetchedFont?: ArrayBuffer;
 }
 
 export interface DubProgress {
@@ -40,7 +42,13 @@ export class FFmpegDubber {
         this.ffmpeg = new FFmpeg();
     }
 
-    async load(onProgress?: ProgressCallback): Promise<void> {
+    async load(
+        onProgress?: ProgressCallback,
+        prefetchedAssets?: {
+            coreJS: string; // Blob URL
+            coreWasm: string; // Blob URL
+        }
+    ): Promise<void> {
         if (this.loaded) return;
 
         onProgress?.({
@@ -48,9 +56,6 @@ export class FFmpegDubber {
             progress: 0,
             message: 'Loading FFmpeg...',
         });
-
-        // Load FFmpeg with proper CORS headers from CDN
-        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
 
         this.ffmpeg.on('log', ({ message }) => {
             console.log('[FFmpeg]', message);
@@ -64,10 +69,22 @@ export class FFmpegDubber {
             });
         });
 
-        await this.ffmpeg.load({
-            coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-            wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-        });
+        if (prefetchedAssets) {
+            // Use pre-fetched blob URLs
+            console.log('[FFmpeg] Using pre-fetched assets');
+            await this.ffmpeg.load({
+                coreURL: prefetchedAssets.coreJS,
+                wasmURL: prefetchedAssets.coreWasm,
+            });
+        } else {
+            // Fallback: fetch from CDN
+            console.log('[FFmpeg] Fetching assets from CDN');
+            const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+            await this.ffmpeg.load({
+                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+            });
+        }
 
         this.loaded = true;
 
@@ -141,6 +158,7 @@ export class FFmpegDubber {
             srtContent,
             bgVolume = 0.0,
             subtitles = {},
+            prefetchedFont,
         } = config;
 
         const {
@@ -196,11 +214,18 @@ export class FFmpegDubber {
                 message: `Loading font ${fontName}...`,
             });
             try {
-                // Ensure fontPath is absolute or relative to the public root
-                const fontUrl = `${import.meta.env.VITE_PUBLIC_BASE_URL}/${fontPath.startsWith('/') ? fontPath.slice(1) : fontPath}`;
-                const fontData = await fetchFile(fontUrl);
                 const fontFileName = 'font.ttf';
-                await this.ffmpeg.writeFile(fontFileName, fontData);
+                if (prefetchedFont) {
+                    // Use pre-fetched font
+                    console.log('[FFmpeg] Using pre-fetched font');
+                    await this.ffmpeg.writeFile(fontFileName, new Uint8Array(prefetchedFont));
+                } else {
+                    // Fallback: fetch font
+                    console.log('[FFmpeg] Fetching font');
+                    const fontUrl = `${import.meta.env.VITE_PUBLIC_BASE_URL}/${fontPath.startsWith('/') ? fontPath.slice(1) : fontPath}`;
+                    const fontData = await fetchFile(fontUrl);
+                    await this.ffmpeg.writeFile(fontFileName, fontData);
+                }
                 // FFmpeg refers to fonts by their "FontName" in ASS/SRT styling, 
                 // but since we provided the file, we can sometimes refer to it directly or rely on the name.
                 // However, in WASM we must use the font name that matches what's in the file.

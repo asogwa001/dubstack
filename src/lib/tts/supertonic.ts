@@ -245,49 +245,92 @@ export class SupertonicTTS extends TTSModel {
         this.basePath = basePath;
     }
 
-    async init(): Promise<void> {
+    /**
+     * Pre-fetched assets interface for parallel loading
+     */
+    public static PrefetchedAssets: {
+        config: TTSConfig;
+        unicodeIndexer: Record<string, number>;
+        dpModel: ArrayBuffer;
+        textEncModel: ArrayBuffer;
+        vectorEstModel: ArrayBuffer;
+        vocoderModel: ArrayBuffer;
+    } | null = null;
+
+    async init(prefetchedAssets?: {
+        config: TTSConfig;
+        unicodeIndexer: Record<string, number>;
+        dpModel: ArrayBuffer;
+        textEncModel: ArrayBuffer;
+        vectorEstModel: ArrayBuffer;
+        vocoderModel: ArrayBuffer;
+    }): Promise<void> {
         if (this.initialized) return;
 
         console.log('Initializing Supertonic TTS...');
 
-        // Load configuration
-        const configResponse = await fetch(`${this.basePath}/onnx/tts.json`);
-        this.config = await configResponse.json();
+        // Use prefetched assets or fetch them
+        const assets = prefetchedAssets || SupertonicTTS.PrefetchedAssets;
 
-        // Load unicode indexer
-        const indexerResponse = await fetch(`${this.basePath}/onnx/unicode_indexer.json`);
-        const indexer = await indexerResponse.json();
-        this.textProcessor = new UnicodeProcessor(indexer);
-
-        // Load ONNX models with WASM backend
+        // Load ONNX session options
         const sessionOptions: ort.InferenceSession.SessionOptions = {
             executionProviders: ['wasm'],
             graphOptimizationLevel: 'all',
         };
 
-        console.log('Loading duration predictor...');
-        this.dpOrt = await ort.InferenceSession.create(
-            `${this.basePath}/onnx/duration_predictor.onnx`,
-            sessionOptions
-        );
+        if (assets) {
+            // Use pre-fetched assets
+            console.log('Using pre-fetched TTS assets');
+            this.config = assets.config;
+            this.textProcessor = new UnicodeProcessor(assets.unicodeIndexer);
 
-        console.log('Loading text encoder...');
-        this.textEncOrt = await ort.InferenceSession.create(
-            `${this.basePath}/onnx/text_encoder.onnx`,
-            sessionOptions
-        );
+            console.log('Creating ONNX sessions from pre-fetched models...');
+            const [dpOrt, textEncOrt, vectorEstOrt, vocoderOrt] = await Promise.all([
+                ort.InferenceSession.create(assets.dpModel, sessionOptions),
+                ort.InferenceSession.create(assets.textEncModel, sessionOptions),
+                ort.InferenceSession.create(assets.vectorEstModel, sessionOptions),
+                ort.InferenceSession.create(assets.vocoderModel, sessionOptions),
+            ]);
 
-        console.log('Loading vector estimator...');
-        this.vectorEstOrt = await ort.InferenceSession.create(
-            `${this.basePath}/onnx/vector_estimator.onnx`,
-            sessionOptions
-        );
+            this.dpOrt = dpOrt;
+            this.textEncOrt = textEncOrt;
+            this.vectorEstOrt = vectorEstOrt;
+            this.vocoderOrt = vocoderOrt;
+        } else {
+            // Fallback: fetch assets sequentially (backwards compatibility)
+            console.log('Fetching TTS assets...');
 
-        console.log('Loading vocoder...');
-        this.vocoderOrt = await ort.InferenceSession.create(
-            `${this.basePath}/onnx/vocoder.onnx`,
-            sessionOptions
-        );
+            const configResponse = await fetch(`${this.basePath}/onnx/tts.json`);
+            this.config = await configResponse.json();
+
+            const indexerResponse = await fetch(`${this.basePath}/onnx/unicode_indexer.json`);
+            const indexer = await indexerResponse.json();
+            this.textProcessor = new UnicodeProcessor(indexer);
+
+            console.log('Loading duration predictor...');
+            this.dpOrt = await ort.InferenceSession.create(
+                `${this.basePath}/onnx/duration_predictor.onnx`,
+                sessionOptions
+            );
+
+            console.log('Loading text encoder...');
+            this.textEncOrt = await ort.InferenceSession.create(
+                `${this.basePath}/onnx/text_encoder.onnx`,
+                sessionOptions
+            );
+
+            console.log('Loading vector estimator...');
+            this.vectorEstOrt = await ort.InferenceSession.create(
+                `${this.basePath}/onnx/vector_estimator.onnx`,
+                sessionOptions
+            );
+
+            console.log('Loading vocoder...');
+            this.vocoderOrt = await ort.InferenceSession.create(
+                `${this.basePath}/onnx/vocoder.onnx`,
+                sessionOptions
+            );
+        }
 
         // Discover available voice styles - matching server.py VOICE_MAP
         const voiceMap: Record<string, string> = {
