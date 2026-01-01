@@ -1,12 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { SupertonicTTS } from './lib/tts/supertonic';
+import { TTSWorkerClient, VoiceStyle } from './lib/tts/ttsWorkerClient';
 import { getFFmpegDubber, DubProgress } from './lib/ffmpeg/dubber';
-import { VoiceStyle } from './lib/tts/types';
+import { loadAllAssets, AssetCache } from './lib/assetLoader';
 import { Mic, Video, Download, Play, Loader2, Volume2, Sparkles, ChevronLeft, ChevronRight, Check, Sliders, Cpu } from 'lucide-react';
 
 import './App.css';
 
-type ProcessingStage = 'idle' | 'loading-tts' | 'generating-audio' | 'loading-ffmpeg' | 'processing-video' | 'complete' | 'error';
+type ProcessingStage = 'idle' | 'loading-assets' | 'generating-audio' | 'processing-video' | 'complete' | 'error';
 
 interface ProcessingState {
   stage: ProcessingStage;
@@ -73,7 +73,7 @@ function App() {
   });
   const [outputUrl, setOutputUrl] = useState<string | null>(null);
 
-  const ttsRef = useRef<SupertonicTTS | null>(null);
+  const ttsRef = useRef<TTSWorkerClient | null>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
 
   // Load videos on mount
@@ -159,50 +159,64 @@ function App() {
     if (!selectedVideo || !text.trim()) return;
 
     try {
-      // Initialize TTS if needed
+      // Stage 1: Load all assets in parallel
       setProcessing({
-        stage: 'loading-tts',
+        stage: 'loading-assets',
         progress: 0,
-        message: 'Loading TTS models...',
+        message: 'Loading assets...',
       });
 
+      const assets: AssetCache = await loadAllAssets(
+        selectedVideo.name,
+        settings.subtitleFontPath,
+        (progress, message) => {
+          setProcessing({
+            stage: 'loading-assets',
+            progress,
+            message,
+          });
+        }
+      );
+
+      // Initialize TTS worker with pre-fetched assets
       if (!ttsRef.current) {
-        ttsRef.current = new SupertonicTTS();
+        ttsRef.current = new TTSWorkerClient();
       }
 
       if (!ttsRef.current.initialized) {
-        await ttsRef.current.init();
+        await ttsRef.current.init(assets.tts);
         setAvailableVoices(ttsRef.current.getAvailableVoices());
       }
 
-      // Generate audio
+      // Stage 2: Generate audio (runs in Web Worker - UI stays responsive)
       setProcessing({
         stage: 'generating-audio',
         progress: 0,
         message: 'Generating speech...',
       });
 
-      const result = await ttsRef.current.generate({
-        text: text.trim(),
-        voiceId: selectedVoice,
-        speed: settings.speed,
-        silenceDuration: settings.silenceDuration,
-        endSilenceDuration: settings.endSilenceDuration,
-      });
+      const result = await ttsRef.current.generate(
+        {
+          text: text.trim(),
+          voiceId: selectedVoice,
+          speed: settings.speed,
+          silenceDuration: settings.silenceDuration,
+          endSilenceDuration: settings.endSilenceDuration,
+        },
+        (message, chunkIndex, totalChunks) => {
+          // Progress callback from worker
+          const progress = chunkIndex !== undefined && totalChunks !== undefined
+            ? Math.round(((chunkIndex + 1) / totalChunks) * 100)
+            : 0;
+          setProcessing({
+            stage: 'generating-audio',
+            progress,
+            message,
+          });
+        }
+      );
 
-      // Fetch the actual video file for processing
-      setProcessing({
-        stage: 'loading-ffmpeg',
-        progress: 0,
-        message: 'Loading video processor...',
-      });
-
-      const videoFileName = selectedVideo.name;
-      //const videoResponse = await fetch(getVideoPath(videoFileName));
-      const videoResponse = await fetch(`${import.meta.env.VITE_PUBLIC_BASE_URL}/videos/${videoFileName}`);
-
-      const videoBlob = await videoResponse.blob();
-
+      // Stage 3: Process video with pre-fetched assets
       const dubber = getFFmpegDubber();
 
       const handleProgress = (progress: DubProgress) => {
@@ -213,7 +227,11 @@ function App() {
         });
       };
 
-      await dubber.load(handleProgress);
+      // Load FFmpeg with pre-fetched assets
+      await dubber.load(handleProgress, {
+        coreJS: assets.ffmpeg.coreJS,
+        coreWasm: assets.ffmpeg.coreWasm,
+      });
 
       setProcessing({
         stage: 'processing-video',
@@ -222,7 +240,7 @@ function App() {
       });
 
       const outputBlob = await dubber.dub({
-        videoFile: videoBlob,
+        videoFile: assets.video!,
         audioData: result.wav,
         sampleRate: result.sampleRate,
         srtContent: result.srt || '',
@@ -232,6 +250,7 @@ function App() {
           fontName: settings.subtitleFont,
           fontPath: settings.subtitleFontPath,
         },
+        prefetchedFont: assets.font,
       }, handleProgress);
 
       const url = URL.createObjectURL(outputBlob);
