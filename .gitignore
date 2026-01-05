@@ -25,7 +25,12 @@ dist-ssr
 
 
 # custom
-public
+# public
+public/models/chatterbox*
+public/models/Kokoro*
+public/models/supertonic*
+public/videos/subway*
+public/videos/minecraft*
 src/assets
-*.env*
-videos
+*.env
+yt-dlp
