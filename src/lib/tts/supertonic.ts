@@ -187,7 +187,7 @@ function intArrayToTensor(array: unknown, dims: number[]): ort.Tensor {
 /**
  * Chunk text into manageable segments
  */
-function chunkText(text: string, maxLen: number = 300): string[] {
+function chunkText(text: string, maxLen: number = 50): string[] {
     if (typeof text !== 'string') {
         throw new Error(`chunkText expects a string, got ${typeof text}`);
     }
