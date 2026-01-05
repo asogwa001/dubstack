@@ -1,10 +1,11 @@
-const CACHE_NAME = 'dubstack-assets-v4';
+const CACHE_NAME = 'dubstack-assets-v5';
 const ASSETS_TO_CACHE_EXTENSIONS = [
     '.onnx',
     'onnx_data',
     'bin',
     '.wasm',
     '.mp4',
+    '.webm',
     // '.json',
 ];
 
