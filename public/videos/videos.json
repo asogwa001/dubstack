@@ -1,12 +1,18 @@
 {
   "videos": [
     {
-      "id": "a1c2d3e4-0001-4f2e-9eee-b6e4e7dfdd2b",
-      "name": "subway_surf_1.mp4",
-      "preview": "subway_surf_1_preview.mp4",
-      "duration": "03:13",
-      "tags": ["subway", "nature"]
+      "id": "0d2514f6-1b31-4e48-ba69-9bec317c01d7",
+      "name": "minecraft_gameplay_1.webm",
+      "preview": "minecraft_gameplay_1_preview.mp4",
+      "duration": "02:59",
+      "tags": ["minecraft"]
+    },
+    {
+      "id": "b7ffcf09-c7fa-40be-ba81-ac19076fd86f",
+      "name": "subway_surfer_gameplay_1.webm",
+      "preview": "subway_surfer_gameplay_1_preview.mp4",
+      "duration": "03:00",
+      "tags": ["subway surf"]
     }
-
   ]
 }
